@@ -31,15 +31,10 @@ public final class Task implements Runnable {
 	 */
 	void forfeit() {
 		state = FORFEITED;
-		stopSelf();
 	}
 
 	public State getState() {
 		return state;
-	}
-
-	private void stopSelf() {
-		Thread.currentThread().interrupt();
 	}
 
 	@Override
@@ -48,20 +43,15 @@ public final class Task implements Runnable {
 	}
 
 	/**
-	 * Задача считается активной если она не брошена и не отменена
-	 */
-	public boolean isActive() {
-		return state == RUNNING;
-	}
-
-	/**
 	 * указывает на то, что задача отменена. По завершению будет вызвана функция {@link Runner#onCancelled()}
 	 */
 	void cancel() {
 		state = CANCELLED;
-		stopSelf();
 	}
 
+	public boolean isRuninng() {
+		return state == RUNNING;
+	}
 
 	public boolean isCancelled() {
 		return state == CANCELLED;
