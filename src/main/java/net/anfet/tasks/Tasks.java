@@ -8,21 +8,20 @@ import java.util.concurrent.Executors;
  */
 public final class Tasks {
 
-	private static final ConcurrentMultiMap<Object, Task> tasks = new ConcurrentMultiMap<>();
+	private static final ConcurrentMultiMap<Object, Runner> tasks = new ConcurrentMultiMap<>();
 	private static final ExecutorService service = Executors.newCachedThreadPool();
 
 	/**
 	 * запускает задачу на выполнение
 	 * @param runner задача
-	 * @param owner  владелец
 	 */
-	public static void execute(Runner runner, Object owner) {
-		service.execute(tasks.add(owner, new Task(owner, runner)));
+	public static void execute(Runner runner) {
+		service.execute(tasks.add(runner.getOwner(), runner));
 	}
 
 	public static void shutdown() {
 		for (Object key : tasks.keys()) {
-			forfeitAll(key);
+			forfeitAllFor(key);
 		}
 
 		service.shutdown();
@@ -32,35 +31,33 @@ public final class Tasks {
 	 * отбрасывает все задачи для данного владельца
 	 * @param owner владелец задач
 	 */
-	public static void forfeitAll(Object owner) {
-		for (Task task : tasks.get(owner)) {
-			forfeit(task);
+	public static void forfeitAllFor(Object owner) {
+		for (Runner runner : tasks.get(owner)) {
+			forfeit(runner);
 		}
 	}
 
 	/**
 	 * Правильный способ отменить задачу
-	 * @param task задача
+	 * @param runner задача
 	 */
-	public static void cancel(Task task) {
-		task.cancel();
-		remove(task);
+	public static void cancel(Runner runner) {
+		runner.cancel();
 	}
 
 	/**
 	 * внутренняя функция по удалению элемента из списка
-	 * @param task задача
+	 * @param runner задача
 	 */
-	static void remove(Task task) {
-		tasks.remove(task.getOwner(), task);
+	static void remove(Runner runner) {
+		tasks.remove(runner.getOwner(), runner);
 	}
 
 	/**
 	 * внутренная функция по отбрасыванию задачи
-	 * @param task
+	 * @param runner
 	 */
-	static void forfeit(Task task) {
-		task.forfeit();
-		remove(task);
+	static void forfeit(Runner runner) {
+		runner.forfeit();
 	}
 }

@@ -1,24 +1,36 @@
 package net.anfet.tasks;
 
+import static net.anfet.tasks.State.CANCELLED;
+import static net.anfet.tasks.State.FINISHED;
+import static net.anfet.tasks.State.FORFEITED;
+import static net.anfet.tasks.State.NEW;
+import static net.anfet.tasks.State.RUNNING;
+
 /**
  * Базовый раннер для выполнения задач
  */
-public abstract class Runner {
+public abstract class Runner implements Runnable {
 
-	private Task task;
+	private final Object owner;
+	private volatile State state;
 
-	protected Task getTask() {
-		return task;
+
+	public Runner(Object owner) {
+		this.owner = owner;
+		state = NEW;
 	}
 
-	void setTask(Task task) {
-		this.task = task;
+
+	protected abstract void doInBackground() throws Exception;
+
+	@Override
+	public String toString() {
+		return state.toString();
 	}
 
-	/**
-	 * абстрактный метод выполняющий работу в треде
-	 */
-	protected abstract void doInBackground();
+	Object getOwner() {
+		return owner;
+	}
 
 	protected void onPublishFinished() {
 		try {
@@ -29,17 +41,29 @@ public abstract class Runner {
 	}
 
 	/**
-	 * удобный метод для отмены задачи. вызывает {@link Tasks#cancel(Task)}
+	 * удобный метод для отмены задачи
 	 */
 	public void cancel() {
-		Tasks.cancel(task);
+		state = CANCELLED;
+
+		synchronized (this) {
+			notifyAll();
+		}
+
+		Tasks.remove(this);
 	}
 
 	/**
-	 * удобный метод для отбрасывания задачи. вызывает {@link Tasks#forfeit(Task)}
+	 * удобный метод для отбрасывания задачи
 	 */
 	public void forfeit() {
-		Tasks.forfeit(task);
+		state = FORFEITED;
+
+		synchronized (this) {
+			notifyAll();
+		}
+
+		Tasks.remove(this);
 	}
 
 	/**
@@ -72,7 +96,7 @@ public abstract class Runner {
 	}
 
 	/**
-	 * вызывается {@link Task} при окончении выполнения.
+	 * вызывается {@link Tasks} при окончении выполнения.
 	 * Не вызывается если состояние задачи {@link State#FORFEITED}
 	 */
 	protected void publishFinished() {
@@ -102,9 +126,46 @@ public abstract class Runner {
 	}
 
 	/**
-	 * вызываеся при старте задачи. требует окончания для старта задачи. в течении этого метода задачу можно отменить или бросить.
+	 * вызываеся при старте задачи в рабочем потоке. требует окончания для старта задачи. в течении этого метода задачу можно отменить или бросить.
 	 */
 	protected void onPreExecute() {
 
+	}
+
+	public boolean isRuninng() {
+		return state == RUNNING;
+	}
+
+	@Override
+	public void run() {
+		try {
+			try {
+				if (state != NEW)
+					throw new IllegalStateException("Cannot start task in a " + state.toString() + " state");
+
+				state = RUNNING;
+				onPreExecute();
+				if (state == RUNNING) {
+					doInBackground();
+				}
+			} catch (Exception ex) {
+				if (state != FORFEITED) {
+					publishError(ex);
+				}
+			}
+
+			if (state != FORFEITED) {
+				if (state == CANCELLED) {
+					publishCancelled();
+				} else {
+					state = FINISHED;
+				}
+
+				publishFinished();
+			}
+
+		} finally {
+			Tasks.remove(this);
+		}
 	}
 }
