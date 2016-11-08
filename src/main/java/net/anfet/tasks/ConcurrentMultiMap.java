@@ -1,8 +1,5 @@
 package net.anfet.tasks;
 
-import com.sun.istack.internal.NotNull;
-import com.sun.istack.internal.Nullable;
-
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,7 +42,7 @@ public final class ConcurrentMultiMap<T, V> implements Serializable {
 	 * @param key
 	 * @param value
 	 */
-	public boolean remove(@NotNull T key, @NotNull V value) {
+	public boolean remove(T key, V value) {
 		if (key == null || value == null) {
 			throw new NullPointerException("Key or value is null");
 		}
@@ -65,7 +62,7 @@ public final class ConcurrentMultiMap<T, V> implements Serializable {
 	 * @param key   key
 	 * @param value adding value
 	 */
-	public V add(@NotNull T key, @NotNull V value) {
+	public V add(T key, V value) {
 		if (key == null || value == null) {
 			throw new NullPointerException("Key or value is null");
 		}
@@ -86,8 +83,7 @@ public final class ConcurrentMultiMap<T, V> implements Serializable {
 	 * @param key key
 	 * @return defensive copy of the internal list
 	 */
-	@NotNull
-	public List<V> get(@Nullable T key) {
+	public List<V> get(T key) {
 		List<V> list;
 		synchronized (map) {
 			if (key == null || ((list = map.get(key)) == null)) {
