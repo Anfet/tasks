@@ -28,7 +28,7 @@ public abstract class Runner implements Runnable {
 		return state.toString();
 	}
 
-	Object getOwner() {
+	protected Object getOwner() {
 		return owner;
 	}
 
