@@ -1,6 +1,8 @@
 package net.anfet.tasks;
 
+
 import java.io.Serializable;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -105,6 +107,16 @@ public final class ConcurrentMultiMap<T, V> implements Serializable {
 	public boolean contains(T key) {
 		synchronized (map) {
 			return map.containsKey(key);
+		}
+	}
+
+	public void set(T type, Collection<V> fields) {
+
+		if (type == null)
+			throw new NullPointerException("type is null");
+
+		synchronized (map) {
+			map.put(type, fields == null ? new LinkedList<V>() : new LinkedList<V>(fields));
 		}
 	}
 }

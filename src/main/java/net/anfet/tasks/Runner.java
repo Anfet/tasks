@@ -20,6 +20,12 @@ public abstract class Runner implements Runnable {
 		state = NEW;
 	}
 
+	protected void await(long timeout) throws InterruptedException {
+		synchronized (this) {
+			wait(timeout);
+		}
+	}
+
 
 	protected abstract void doInBackground() throws Exception;
 
@@ -33,10 +39,12 @@ public abstract class Runner implements Runnable {
 	}
 
 	protected void onPublishFinished() {
-		try {
-			onPostExecute();
-		} finally {
-			onFinished();
+		synchronized (this) {
+			try {
+				onPostExecute();
+			} finally {
+				onFinished();
+			}
 		}
 	}
 
@@ -44,9 +52,8 @@ public abstract class Runner implements Runnable {
 	 * удобный метод для отмены задачи
 	 */
 	public void cancel() {
-		state = CANCELLED;
-
 		synchronized (this) {
+			state = CANCELLED;
 			notifyAll();
 		}
 
@@ -57,9 +64,8 @@ public abstract class Runner implements Runnable {
 	 * удобный метод для отбрасывания задачи
 	 */
 	public void forfeit() {
-		state = FORFEITED;
-
 		synchronized (this) {
+			state = FORFEITED;
 			notifyAll();
 		}
 
