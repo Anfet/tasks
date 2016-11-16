@@ -5,5 +5,5 @@ package net.anfet.tasks;
  */
 
 public enum State {
-	NEW, RUNNING, CANCELLED, FINISHED, FORFEITED
+	NEW, RUNNING, CANCELLED, FINISHED, FORFEITED, ERROR
 }

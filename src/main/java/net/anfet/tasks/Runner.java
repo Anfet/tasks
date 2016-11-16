@@ -1,6 +1,7 @@
 package net.anfet.tasks;
 
 import static net.anfet.tasks.State.CANCELLED;
+import static net.anfet.tasks.State.ERROR;
 import static net.anfet.tasks.State.FINISHED;
 import static net.anfet.tasks.State.FORFEITED;
 import static net.anfet.tasks.State.NEW;
@@ -38,12 +39,18 @@ public abstract class Runner implements Runnable {
 		return owner;
 	}
 
+	/**
+	 * executes {@link #onPostExecute()}
+	 */
 	protected void publishPostExecute() {
 		synchronized (this) {
 			onPostExecute();
 		}
 	}
 
+	/**
+	 * executes {@link #onFinished()}
+	 */
 	protected void onPublishFinished() {
 		synchronized (this) {
 			onFinished();
@@ -162,16 +169,24 @@ public abstract class Runner implements Runnable {
 					return;
 
 
+				state = ERROR;
 				publishError(ex);
 			}
 
-			if (state == FORFEITED)
-				return;
-
-			if (state == CANCELLED) {
-				publishCancelled();
-			} else {
-				publishPostExecute();
+			switch (state) {
+				case RUNNING:
+					publishPostExecute();
+					break;
+				case CANCELLED:
+					publishCancelled();
+					break;
+				case FORFEITED:
+					return;
+				case NEW:
+				case FINISHED:
+					throw new IllegalStateException("Runner in wrong state after execution " + state);
+				case ERROR:
+					break;
 			}
 
 			publishFinished();
