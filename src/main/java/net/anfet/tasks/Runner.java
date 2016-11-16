@@ -38,13 +38,15 @@ public abstract class Runner implements Runnable {
 		return owner;
 	}
 
+	protected void publishPostExecute() {
+		synchronized (this) {
+			onPostExecute();
+		}
+	}
+
 	protected void onPublishFinished() {
 		synchronized (this) {
-			try {
-				onPostExecute();
-			} finally {
-				onFinished();
-			}
+			onFinished();
 		}
 	}
 
@@ -151,25 +153,29 @@ public abstract class Runner implements Runnable {
 
 				state = RUNNING;
 				onPreExecute();
+
 				if (state == RUNNING) {
 					doInBackground();
 				}
 			} catch (Exception ex) {
-				if (state != FORFEITED) {
-					publishError(ex);
-				}
+				if (state == FORFEITED)
+					return;
+
+
+				publishError(ex);
 			}
 
-			if (state != FORFEITED) {
-				if (state == CANCELLED) {
-					publishCancelled();
-				} else {
-					state = FINISHED;
-				}
+			if (state == FORFEITED)
+				return;
 
-				publishFinished();
+			if (state == CANCELLED) {
+				publishCancelled();
+			} else {
+				publishPostExecute();
 			}
 
+			publishFinished();
+			state = FINISHED;
 		} finally {
 			Tasks.remove(this);
 		}
