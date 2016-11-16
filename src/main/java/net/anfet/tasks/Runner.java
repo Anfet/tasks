@@ -48,14 +48,6 @@ public abstract class Runner implements Runnable {
 		}
 	}
 
-	/**
-	 * executes {@link #onFinished()}
-	 */
-	protected void onPublishFinished() {
-		synchronized (this) {
-			onFinished();
-		}
-	}
 
 	/**
 	 * удобный метод для отмены задачи
@@ -115,7 +107,7 @@ public abstract class Runner implements Runnable {
 	 * Не вызывается если состояние задачи {@link State#FORFEITED}
 	 */
 	protected void publishFinished() {
-		onPublishFinished();
+		onFinished();
 	}
 
 	/**
