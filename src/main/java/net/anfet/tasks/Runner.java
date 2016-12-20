@@ -1,22 +1,25 @@
 package net.anfet.tasks;
 
-import static net.anfet.tasks.State.CANCELLED;
-import static net.anfet.tasks.State.ERROR;
-import static net.anfet.tasks.State.FINISHED;
-import static net.anfet.tasks.State.FORFEITED;
-import static net.anfet.tasks.State.NEW;
-import static net.anfet.tasks.State.RUNNING;
-
 /**
  * Базовый раннер для выполнения задач
  */
 public abstract class Runner implements Runnable {
 
+	private static final int NEW = 0;
+	private static final int RUNNING = 1;
+	private static final int CANCELLED = 2;
+	private static final int FINISHED = 3;
+	private static final int FORFEITED = 4;
+	private static final int ERROR = 5;
+
+
 	private final Object owner;
-	private volatile State state;
+	private final Object lock;
+	private int state;
 
 
 	public Runner(Object owner) {
+		this.lock = new Object();
 		this.owner = owner;
 		state = NEW;
 	}
@@ -32,10 +35,10 @@ public abstract class Runner implements Runnable {
 
 	@Override
 	public String toString() {
-		return state.toString();
+		return getClass().getSimpleName();
 	}
 
-	protected Object getOwner() {
+	Object getOwner() {
 		return owner;
 	}
 
@@ -53,24 +56,16 @@ public abstract class Runner implements Runnable {
 	 * удобный метод для отмены задачи
 	 */
 	public void cancel() {
-		synchronized (this) {
-			state = CANCELLED;
-			notifyAll();
-		}
-
-		Tasks.remove(this);
+		state = CANCELLED;
 	}
 
 	/**
 	 * удобный метод для отбрасывания задачи
 	 */
-	public void forfeit() {
-		synchronized (this) {
+	void forfeit() {
+		synchronized (lock) {
 			state = FORFEITED;
-			notifyAll();
 		}
-
-		Tasks.remove(this);
 	}
 
 	/**
@@ -104,7 +99,7 @@ public abstract class Runner implements Runnable {
 
 	/**
 	 * вызывается {@link Tasks} при окончении выполнения.
-	 * Не вызывается если состояние задачи {@link State#FORFEITED}
+	 * Не вызывается если состояние задачи {@link #FORFEITED}
 	 */
 	protected void publishFinished() {
 		onFinished();
@@ -128,61 +123,59 @@ public abstract class Runner implements Runnable {
 	/**
 	 * вызывается при старте задачи и ждет окончания
 	 */
-	protected void publishPreExecute() {
+	protected void publishPreExecute() throws Exception {
 		onPreExecute();
 	}
 
 	/**
 	 * вызываеся при старте задачи в рабочем потоке. требует окончания для старта задачи. в течении этого метода задачу можно отменить или бросить.
+	 * Если выбрасывается какая-либо ошибка - то запрос не будет выполнен, а ошибка попадает в {@link #onError(Throwable)}
 	 */
-	protected void onPreExecute() {
+	protected void onPreExecute() throws Exception {
 
 	}
 
-	public boolean isRuninng() {
+	public boolean alive() {
 		return state == RUNNING;
 	}
 
 	@Override
 	public void run() {
+
+		Throwable error = null;
 		try {
 			try {
-				if (state != NEW)
-					throw new IllegalStateException("Cannot start task in a " + state.toString() + " state");
-
 				state = RUNNING;
-				onPreExecute();
+				publishPreExecute();
 
 				if (state == RUNNING) {
 					doInBackground();
 				}
 			} catch (Exception ex) {
-				if (state == FORFEITED)
-					return;
-
-
+				error = ex;
 				state = ERROR;
-				publishError(ex);
 			}
 
-			switch (state) {
-				case RUNNING:
-					publishPostExecute();
-					break;
-				case CANCELLED:
-					publishCancelled();
-					break;
-				case FORFEITED:
-					return;
-				case NEW:
-				case FINISHED:
-					throw new IllegalStateException("Runner in wrong state after execution " + state);
-				case ERROR:
-					break;
-			}
+			synchronized (lock) {
+				if (state != FORFEITED) {
+					switch (state) {
+						case RUNNING:
+							publishPostExecute();
+							break;
+						case CANCELLED:
+							publishCancelled();
+							break;
+						case ERROR:
+							publishError(error);
+							break;
+						default:
+							throw new IllegalStateException("Runner in wrong state after execution " + state);
+					}
 
-			publishFinished();
-			state = FINISHED;
+					publishFinished();
+					state = FINISHED;
+				}
+			}
 		} finally {
 			Tasks.remove(this);
 		}

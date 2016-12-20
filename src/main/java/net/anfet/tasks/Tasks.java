@@ -1,5 +1,7 @@
 package net.anfet.tasks;
 
+import net.anfet.MultiMap;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -8,7 +10,7 @@ import java.util.concurrent.Executors;
  */
 public final class Tasks {
 
-	private static final ConcurrentMultiMap<Object, Runner> tasks = new ConcurrentMultiMap<>();
+	private static final MultiMap<Object, Runner> tasks = new MultiMap<>();
 	private static final ExecutorService service = Executors.newCachedThreadPool();
 
 	/**
@@ -57,7 +59,7 @@ public final class Tasks {
 	 * внутренная функция по отбрасыванию задачи
 	 * @param runner
 	 */
-	static void forfeit(Runner runner) {
+	private static void forfeit(Runner runner) {
 		runner.forfeit();
 	}
 }
