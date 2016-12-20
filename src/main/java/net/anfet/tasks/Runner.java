@@ -14,12 +14,10 @@ public abstract class Runner implements Runnable {
 
 
 	private final Object owner;
-	private final Object lock;
 	private int state;
 
 
 	public Runner(Object owner) {
-		this.lock = new Object();
 		this.owner = owner;
 		state = NEW;
 	}
@@ -46,9 +44,7 @@ public abstract class Runner implements Runnable {
 	 * executes {@link #onPostExecute()}
 	 */
 	protected void publishPostExecute() {
-		synchronized (this) {
-			onPostExecute();
-		}
+		onPostExecute();
 	}
 
 
@@ -63,9 +59,7 @@ public abstract class Runner implements Runnable {
 	 * удобный метод для отбрасывания задачи
 	 */
 	void forfeit() {
-		synchronized (lock) {
-			state = FORFEITED;
-		}
+		state = FORFEITED;
 	}
 
 	/**
@@ -156,26 +150,27 @@ public abstract class Runner implements Runnable {
 				state = ERROR;
 			}
 
-			synchronized (lock) {
-				if (state != FORFEITED) {
-					switch (state) {
-						case RUNNING:
-							publishPostExecute();
-							break;
-						case CANCELLED:
-							publishCancelled();
-							break;
-						case ERROR:
-							publishError(error);
-							break;
-						default:
-							throw new IllegalStateException("Runner in wrong state after execution " + state);
-					}
-
-					publishFinished();
-					state = FINISHED;
+			if (state != FORFEITED) {
+				switch (state) {
+					case RUNNING:
+						publishPostExecute();
+						break;
+					case CANCELLED:
+						publishCancelled();
+						break;
+					case ERROR:
+						publishError(error);
+						break;
+					default:
+						throw new IllegalStateException("Runner in wrong state after execution " + state);
 				}
 			}
+
+			if (state != FORFEITED) {
+				publishFinished();
+				state = FINISHED;
+			}
+
 		} finally {
 			Tasks.remove(this);
 		}
