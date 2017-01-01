@@ -36,7 +36,7 @@ public abstract class Runner implements Runnable {
 		return getClass().getSimpleName();
 	}
 
-	Object getOwner() {
+	public Object getOwner() {
 		return owner;
 	}
 
