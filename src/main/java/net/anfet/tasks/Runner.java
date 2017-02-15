@@ -5,16 +5,14 @@ package net.anfet.tasks;
  */
 public abstract class Runner implements Runnable {
 
-	private static final int NEW = 0;
-	private static final int RUNNING = 1;
-	private static final int CANCELLED = 2;
-	private static final int FINISHED = 3;
-	private static final int FORFEITED = 4;
-	private static final int ERROR = 5;
-
-
-	private final Object owner;
-	private int state;
+	protected static final int NEW = 0;
+	protected static final int RUNNING = 1;
+	protected static final int CANCELLED = 2;
+	protected static final int FINISHED = 3;
+	protected static final int FORFEITED = 4;
+	protected static final int ERROR = 5;
+	protected final Object owner;
+	protected int state;
 
 
 	public Runner(Object owner) {
