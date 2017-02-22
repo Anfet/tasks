@@ -173,4 +173,8 @@ public abstract class Runner implements Runnable {
 			Tasks.remove(this);
 		}
 	}
+
+	public int getState() {
+		return state;
+	}
 }
