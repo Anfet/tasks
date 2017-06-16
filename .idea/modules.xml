@@ -3,8 +3,6 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/tasks.iml" filepath="$PROJECT_DIR$/.idea/modules/tasks.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/tasks_main.iml" filepath="$PROJECT_DIR$/.idea/modules/tasks_main.iml" group="tasks" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/tasks_test.iml" filepath="$PROJECT_DIR$/.idea/modules/tasks_test.iml" group="tasks" />
     </modules>
   </component>
 </project>

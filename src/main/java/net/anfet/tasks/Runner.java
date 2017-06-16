@@ -5,19 +5,14 @@ package net.anfet.tasks;
  */
 public abstract class Runner implements Runnable {
 
-	protected static final int NEW = 0;
-	protected static final int RUNNING = 1;
-	protected static final int CANCELLED = 2;
-	protected static final int FINISHED = 3;
-	protected static final int FORFEITED = 4;
-	protected static final int ERROR = 5;
+
 	protected final Object owner;
-	protected int state;
+	protected RunnerState state;
 
 
 	public Runner(Object owner) {
 		this.owner = owner;
-		state = NEW;
+		state = RunnerState.NEW;
 	}
 
 	protected void await(long timeout) throws InterruptedException {
@@ -50,14 +45,14 @@ public abstract class Runner implements Runnable {
 	 * удобный метод для отмены задачи
 	 */
 	public void cancel() {
-		state = CANCELLED;
+		state = RunnerState.CANCELLED;
 	}
 
 	/**
 	 * удобный метод для отбрасывания задачи
 	 */
 	void forfeit() {
-		state = FORFEITED;
+		state = RunnerState.FORFEITED;
 	}
 
 	/**
@@ -91,7 +86,7 @@ public abstract class Runner implements Runnable {
 
 	/**
 	 * вызывается {@link Tasks} при окончении выполнения.
-	 * Не вызывается если состояние задачи {@link #FORFEITED}
+	 * Не вызывается если состояние задачи {@link RunnerState#FORFEITED}
 	 */
 	protected void publishFinished() {
 		onFinished();
@@ -127,8 +122,16 @@ public abstract class Runner implements Runnable {
 
 	}
 
+	public boolean cancelled() {
+		return state == RunnerState.CANCELLED;
+	}
+
+	public boolean forfeited() {
+		return state == RunnerState.FORFEITED;
+	}
+
 	public boolean alive() {
-		return state == RUNNING;
+		return state == RunnerState.RUNNING;
 	}
 
 	@Override
@@ -137,36 +140,38 @@ public abstract class Runner implements Runnable {
 		Throwable error = null;
 		try {
 			try {
-				state = RUNNING;
+				state = RunnerState.RUNNING;
 				publishPreExecute();
-
-				if (state == RUNNING) {
-					doInBackground();
-				}
+				doInBackground();
 			} catch (Exception ex) {
 				error = ex;
-				state = ERROR;
+				state = RunnerState.ERROR;
 			}
 
-			if (state != FORFEITED) {
-				switch (state) {
-					case RUNNING:
-						publishPostExecute();
-						break;
-					case CANCELLED:
-						publishCancelled();
-						break;
-					case ERROR:
-						publishError(error);
-						break;
-					default:
-						throw new IllegalStateException("Runner in wrong state after execution " + state);
-				}
+
+			switch (state) {
+				case RUNNING:
+					publishPostExecute();
+					break;
+				case CANCELLED:
+					publishCancelled();
+					break;
+				case FORFEITED:
+					return;
+				case ERROR:
+					publishError(error);
+					break;
+				default:
+					throw new IllegalStateException("Runner in wrong state after execution " + state);
 			}
 
-			if (state != FORFEITED) {
-				publishFinished();
-				state = FINISHED;
+			switch (state) {
+				case FORFEITED:
+					return;
+				default:
+					publishFinished();
+					state = RunnerState.FINISHED;
+					break;
 			}
 
 		} finally {
@@ -174,7 +179,7 @@ public abstract class Runner implements Runnable {
 		}
 	}
 
-	public int getState() {
+	public RunnerState getState() {
 		return state;
 	}
 }
