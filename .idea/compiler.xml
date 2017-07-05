@@ -10,7 +10,7 @@
       </profile>
     </annotationProcessing>
     <bytecodeTargetLevel>
-      <module name="tasks" target="1.8" />
+      <module name="tasks" target="1.7" />
       <module name="tasks_main" target="1.7" />
       <module name="tasks_test" target="1.7" />
     </bytecodeTargetLevel>
