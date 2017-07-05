@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -16,11 +17,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class RxTasks {
 	private static final AtomicInteger id = new AtomicInteger(0);
 	private static final MultiMap<WeakReference<Object>, RxRunner> tasks = new MultiMap<>();
-	private static final ExecutorService service = Executors.newCachedThreadPool(r -> {
-		Thread thread = new Thread(r);
-		thread.setDaemon(true);
-		thread.setName("RxTask" + id.incrementAndGet());
-		return thread;
+	private static final ExecutorService service = Executors.newCachedThreadPool(new ThreadFactory() {
+		@Override
+		public Thread newThread(Runnable r) {
+			Thread thread = new Thread(r);
+			thread.setDaemon(true);
+			thread.setName("RxTask" + id.incrementAndGet());
+			return thread;
+		}
 	});
 
 	private synchronized static WeakReference<Object> findRef(Object owner) {
